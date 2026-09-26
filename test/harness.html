@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Harness Page</title>
+<style>body{font-family:system-ui;background:#0b0b0c;color:#eee;padding:40px}h1{font-size:48px}a{color:#8ab4ff}.cta{display:inline-block;padding:10px 16px;background:#6d5dfc;border-radius:8px;color:#fff;text-decoration:none}</style>
+<script>
+// Minimal chrome.storage shim for local testing.
+(() => {
+  const data = JSON.parse(localStorage.getItem('shim') || '{"markup.enabled":true}');
+  const subs = [];
+  window.chrome = { storage: {
+    local: {
+      get: async (keys) => { const o = {}; [].concat(keys).forEach(k => o[k] = data[k]); return o; },
+      set: async (obj) => { const ch = {}; for (const k in obj) { ch[k] = { oldValue: data[k], newValue: obj[k] }; data[k] = obj[k]; }
+        localStorage.setItem('shim', JSON.stringify(data)); subs.forEach(f => f(ch)); },
+    },
+    onChanged: { addListener: (f) => subs.push(f) },
+  } };
+})();
+</script></head>
+<body>
+<nav><a href="#">Product</a> · <a href="#">Pricing</a></nav>
+<section>
+  <h1>Email marketing platform that people love.</h1>
+  <p id="lede">Send <a href="#">email broadcasts</a>, run marketing automations and even send transactional emails.</p>
+  <a class="cta" href="https://example.com">Start free trial</a>
+  <a class="cta" href="https://example.com">Book a demo</a>
+</section>
+<script src="../content.js"></script>
+</body></html>
