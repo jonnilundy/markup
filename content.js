@@ -5,6 +5,7 @@
   const STORE = 'markup.entries';
   const ON = 'markup.enabled';
   const CORNER = 'markup.corner';
+  const FORMAT = 'markup.format';
   const M = 16; // gap from the viewport edge
 
   let enabled = false;
@@ -14,6 +15,8 @@
   let host, root, hoverBox, pickBox, markers, dock, panel, content, pill, seg, thumb;
   let editing = null; // { el, before, html, prev }
   let picked = null; // element chosen in comment mode
+  let format = 'agent'; // agent | human
+  let menuOpen = false;
   let corner = { right: true, bottom: true }; // where the panel rests
   let anchor = { right: true, bottom: true }; // which panel corner sits on the dock point
 
@@ -57,26 +60,15 @@
   const CSS_TEXT = `
     :host {
       all: initial;
+      color-scheme: dark;
       --out: cubic-bezier(0.23, 1, 0.32, 1);
       --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-      --accent: #007aff; --edit: #34c759; --note: #ffcc00;
-      --label: rgba(0,0,0,.85); --label2: rgba(0,0,0,.5); --label3: rgba(0,0,0,.28);
-      --material: rgba(252,252,253,.94); --material-solid: #f6f6f8;
-      --fill: rgba(0,0,0,.05); --fill2: rgba(0,0,0,.08);
-      --thumb: #fff; --thumb-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.06);
-      --edge: rgba(0,0,0,.14); --highlight: rgba(255,255,255,.7);
-      --field: rgba(255,255,255,.75);
-    }
-    @media (prefers-color-scheme: dark) {
-      :host {
-        --accent: #0a84ff; --edit: #30d158; --note: #ffd60a;
-        --label: rgba(255,255,255,.88); --label2: rgba(255,255,255,.55); --label3: rgba(255,255,255,.3);
-        --material: rgba(36,36,40,.7); --material-solid: #242428;
-        --fill: rgba(255,255,255,.06); --fill2: rgba(255,255,255,.1);
-        --thumb: rgba(255,255,255,.18); --thumb-shadow: 0 1px 2px rgba(0,0,0,.3);
-        --edge: rgba(255,255,255,.1); --highlight: rgba(255,255,255,.12);
-        --field: rgba(0,0,0,.25);
-      }
+      --accent: #0a84ff; --edit: #30d158; --note: #ffd60a;
+      --label: rgba(255,255,255,.88); --label2: rgba(255,255,255,.55); --label3: rgba(255,255,255,.3);
+      --material: rgba(36,36,40,.7); --material-solid: #242428;
+      --fill: rgba(255,255,255,.06); --fill2: rgba(255,255,255,.1);
+      --edge: rgba(255,255,255,.1); --highlight: rgba(255,255,255,.12);
+      --field: rgba(0,0,0,.25);
     }
     * { box-sizing: border-box; font-family: var(--font); -webkit-font-smoothing: antialiased; }
 
@@ -107,10 +99,12 @@
     .top { display: flex; align-items: center; gap: 6px; padding: 10px 10px 6px; user-select: none; touch-action: none; }
     .sp { flex: 1; align-self: stretch; }
 
-    .seg { position: relative; display: flex; padding: 2px; border-radius: 8px; background: var(--fill2); }
-    .seg button { position: relative; z-index: 1; border: 0; background: none; cursor: default; padding: 3px 11px; border-radius: 6px; font: 500 12px/18px var(--font); letter-spacing: 0; color: var(--label2); transition: color 150ms var(--out); }
-    .seg button.on { color: var(--label); }
-    .thumb { position: absolute; top: 2px; bottom: 2px; left: 0; border-radius: 6px; background: var(--thumb); box-shadow: var(--thumb-shadow); }
+    .seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; height: 26px; padding: 2px; border-radius: 8px; background: rgba(255,255,255,.07); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.05); }
+    .seg button { position: relative; z-index: 1; height: 22px; padding: 0 12px; border: 0; background: none; cursor: default; white-space: nowrap; text-align: center; font: 500 12px/22px var(--font); letter-spacing: 0; color: var(--label2); transition: color 150ms var(--out); }
+    .seg button:hover { color: var(--label); }
+    .seg button.on { color: #fff; }
+    .seg button:active { transform: none; }
+    .thumb { position: absolute; top: 2px; left: 0; height: 22px; border-radius: 6px; background: rgba(255,255,255,.16); box-shadow: inset 0 .5px 0 rgba(255,255,255,.1), 0 1px 2px rgba(0,0,0,.35); }
     .seg.ready .thumb { transition: transform 220ms var(--out), width 220ms var(--out); }
 
     button { -webkit-tap-highlight-color: transparent; }
@@ -145,11 +139,27 @@
 
     .foot { display: flex; align-items: center; gap: 6px; padding: 8px 10px 10px; }
     .foot .ctx { flex: 1; }
+    .icon:disabled { opacity: .35; pointer-events: none; }
     .btn { border: 0; cursor: default; border-radius: 7px; padding: 4px 11px; font: 500 12.5px/18px var(--font); letter-spacing: -.05px; color: var(--label); background: var(--fill2); transition: filter 120ms var(--out), transform 100ms ease-out; }
     .btn:hover { filter: brightness(.96); }
     .btn.primary { color: #fff; background: var(--accent); box-shadow: inset 0 .5px 0 rgba(255,255,255,.25); }
     .btn.primary:hover { filter: brightness(1.08); }
     .btn:disabled { opacity: .4; pointer-events: none; }
+    .split { position: relative; display: flex; }
+    .split .btn { border-radius: 7px 0 0 7px; min-width: 64px; }
+    .split .btn.chev { border-radius: 0 7px 7px 0; min-width: 0; padding: 4px 7px; margin-left: 1px; }
+    .split .btn.chev svg { margin: 0; width: 10px; height: 10px; }
+    .menu { position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 2; min-width: 232px; padding: 5px; border-radius: 9px;
+      background: rgba(40,40,44,.92); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
+      box-shadow: inset 0 .5px 0 var(--highlight), 0 0 0 .5px var(--edge), 0 10px 30px rgba(0,0,0,.4);
+      transform-origin: right bottom; animation: menu-in 150ms var(--out); }
+    @keyframes menu-in { from { opacity: 0; transform: scale(.97); } }
+    .item { display: grid; grid-template-columns: 16px 1fr; align-items: center; column-gap: 4px; padding: 4px 8px 5px 4px; border-radius: 5px; cursor: default; }
+    .item:hover { background: var(--accent); }
+    .item:hover .sub { color: rgba(255,255,255,.75); }
+    .item svg { width: 11px; height: 11px; justify-self: center; }
+    .item .name { font-size: 13px; color: #fff; }
+    .item .sub { grid-column: 2; font-size: 11px; color: var(--label2); white-space: nowrap; }
     .btn svg { width: 11px; height: 11px; margin: 0 4px -1px 0; }
 
     .pill { display: flex; align-items: center; gap: 8px; padding: 6px 7px 6px 12px; border-radius: 999px; font: 500 12.5px/18px var(--font); letter-spacing: -.05px; user-select: none; touch-action: none; cursor: default; white-space: nowrap; }
@@ -161,6 +171,7 @@
     @media (prefers-reduced-motion: reduce) {
       .surface, .dock:not(.shown) .surface, .dock.min .panel, .dock:not(.min) .pill { transform: none; filter: none; }
       .seg.ready .thumb { transition: opacity 150ms; }
+      .menu { animation: none; }
       button:active { transform: none; }
     }
     @media (prefers-reduced-transparency: reduce) {
@@ -177,6 +188,8 @@
     close: '<svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2L2 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
     check: '<svg viewBox="0 0 12 12"><path d="M2.5 6.5l2.2 2.2L9.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   };
+  ICON.chev = '<svg viewBox="0 0 10 10"><path d="M2.5 4l2.5 2.5L7.5 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const FORMATS = [['agent', 'Copy for Agent', 'Detailed prompt with selectors'], ['human', 'Copy for Human', 'Plain English for Slack']];
   const MODES = [['edit', 'Edit Copy'], ['comment', 'Comment'], ['browse', 'Browse']];
 
   function div(cls, html) {
@@ -204,7 +217,7 @@
         <div class="seg"><span class="thumb"></span>${MODES.map(([m, l]) => `<button data-mode="${m}">${l}</button>`).join('')}</div>
         <span class="sp"></span>
         <button class="icon" data-act="min" title="Minimize">${ICON.min}</button>
-        <button class="icon" data-act="close" title="Turn off (Alt+Shift+E)">${ICON.close}</button>
+        <button class="icon" data-act="clear" title="Clear and turn off (Alt+Shift+E turns off without clearing)">${ICON.close}</button>
       </div>
       <div class="content"></div>`;
     content = panel.querySelector('.content');
@@ -218,8 +231,12 @@
 
     seg.querySelectorAll('[data-mode]').forEach((b) => (b.onclick = () => setMode(b.dataset.mode)));
     panel.querySelector('[data-act="min"]').onclick = () => setMinimized(true);
-    panel.querySelector('[data-act="close"]').onclick = () => chrome.storage.local.set({ [ON]: false });
+    panel.querySelector('[data-act="clear"]').onclick = clearAll;
     panel.querySelector('.top').addEventListener('pointerdown', onGrab);
+    root.addEventListener('pointerdown', (e) => {
+      if (menuOpen && !e.composedPath().some((n) => n.classList && n.classList.contains('split'))) { menuOpen = false; render(); }
+    });
+    panel.addEventListener('keydown', (e) => { if (e.key === 'Escape' && menuOpen) { e.stopPropagation(); menuOpen = false; render(); } });
     pill.addEventListener('pointerdown', onGrab);
 
     root.append(style, markers, hoverBox, pickBox, dock);
@@ -250,7 +267,7 @@
     const b = seg.querySelector(`[data-mode="${mode}"]`);
     seg.querySelectorAll('[data-mode]').forEach((x) => x.classList.toggle('on', x === b));
     thumb.style.width = b.offsetWidth + 'px';
-    thumb.style.transform = `translateX(${b.offsetLeft - 2}px)`;
+    thumb.style.transform = `translateX(${b.offsetLeft}px)`;
     if (!seg.classList.contains('ready')) requestAnimationFrame(() => seg.classList.add('ready'));
   }
 
@@ -290,12 +307,28 @@
         </div>` : ''}
       <div class="foot">
         <span class="ctx">${elsewhere ? `+${elsewhere} on other pages` : ''}</span>
-        <button class="btn" data-act="clear" ${entries.length ? '' : 'disabled'}>Clear</button>
-        <button class="btn primary" data-act="copy" ${entries.length ? '' : 'disabled'}>Copy Prompt (${entries.length})</button>
+        <div class="split">
+          ${menuOpen ? `<div class="menu" role="menu">${FORMATS.map(([f, name, sub]) => `
+            <div class="item" role="menuitemradio" aria-checked="${f === format}" data-format="${f}">
+              <span>${f === format ? ICON.check : ''}</span><span class="name">${name}</span><span class="sub">${sub}</span>
+            </div>`).join('')}</div>` : ''}
+          <button class="btn" data-act="copy" title="${FORMATS.find((x) => x[0] === format)[1]}" ${entries.length ? '' : 'disabled'}>Copy</button>
+          <button class="btn chev" data-act="menu" title="Copy format" aria-haspopup="menu" aria-expanded="${menuOpen}">${ICON.chev}</button>
+        </div>
       </div>`;
 
-    content.querySelector('[data-act="clear"]').onclick = clearAll;
-    content.querySelector('[data-act="copy"]').onclick = (ev) => copyPrompt(ev.currentTarget);
+    const copyBtn = content.querySelector('[data-act="copy"]');
+    copyBtn.onclick = () => copyPrompt(copyBtn);
+    content.querySelector('[data-act="menu"]').onclick = (ev) => { ev.stopPropagation(); menuOpen = !menuOpen; render(); };
+    content.querySelectorAll('[data-format]').forEach((it) => (it.onclick = (ev) => {
+      ev.stopPropagation();
+      format = it.dataset.format;
+      menuOpen = false;
+      chrome.storage.local.set({ [FORMAT]: format });
+      render();
+      const b = content.querySelector('[data-act="copy"]');
+      if (entries.length) copyPrompt(b);
+    }));
     content.querySelectorAll('[data-del]').forEach((b) => (b.onclick = (ev) => {
       ev.stopPropagation();
       entries = entries.filter((e) => e.id !== b.dataset.del);
@@ -559,12 +592,37 @@
   }
 
   function clearAll() {
-    if (!entries.length) return;
-    const here = pageEntries().length;
-    const msg = here === entries.length ? `Clear ${here} change(s)?` : `Clear all ${entries.length} change(s) across every page?`;
-    if (!confirm(msg)) return;
-    entries = [];
-    save(); render();
+    if (entries.length) {
+      const here = pageEntries().length;
+      const msg = here === entries.length ? `Clear ${here} change(s) and turn Markup off?` : `Clear all ${entries.length} change(s) across every page and turn Markup off?`;
+      if (!confirm(msg)) return;
+      entries = [];
+    }
+    chrome.storage.local.set({ [STORE]: entries, [ON]: false });
+  }
+
+  const KIND = { a: 'link', button: 'button', h1: 'heading', h2: 'heading', h3: 'heading', h4: 'heading', h5: 'heading', h6: 'heading', p: 'paragraph', li: 'list item', img: 'image', input: 'field', label: 'label', nav: 'navigation', header: 'header', footer: 'footer', section: 'section' };
+
+  function buildHuman() {
+    const byPage = new Map();
+    entries.forEach((e) => {
+      if (!byPage.has(e.page)) byPage.set(e.page, []);
+      byPage.get(e.page).push(e);
+    });
+    const out = [];
+    for (const [page, list] of byPage) {
+      out.push(`*${list[0].title || page}*`, list[0].url || page);
+      for (const e of list) {
+        if (e.type === 'edit') out.push(`• Change "${snip(e.before, 160)}" to "${snip(e.after, 160)}"`);
+        else {
+          const kind = KIND[e.tag] || 'section';
+          const what = e.before ? `the ${kind} "${snip(e.before, 60)}"` : `the ${kind}`;
+          out.push(`• On ${what}: ${e.comment}`);
+        }
+      }
+      out.push('');
+    }
+    return out.join('\n').trim() + '\n';
   }
 
   function buildPrompt() {
@@ -576,12 +634,14 @@
     const out = [
       'Apply these copy changes and notes to the site source.',
       'For each edit, search the codebase for the exact "Current" text and replace it with "New". Keep markup, links, and styling intact.',
-      'For each comment, do what the note asks to the element described. If a string is not found, list it at the end instead of guessing.',
+      'For each comment, do what the note asks to the element described. Use the CSS selector and element text to find it.',
+      'If a string is not found, or appears in more than one place, do not guess. List it at the end with what you found.',
+      'When done, report each numbered item as applied, skipped, or not found.',
       '',
     ];
     let n = 0;
     for (const [page, list] of byPage) {
-      out.push(`## ${list[0].title ? list[0].title + ' — ' : ''}${page}`, '');
+      out.push(`## ${list[0].title ? list[0].title + ' — ' : ''}${page}`, `URL: ${list[0].url || page}`, '');
       for (const e of list) {
         n++;
         if (e.type === 'edit') {
@@ -597,7 +657,7 @@
   }
 
   async function copyPrompt(btn) {
-    const text = buildPrompt();
+    const text = format === 'human' ? buildHuman() : buildPrompt();
     let ok = false;
     try { await navigator.clipboard.writeText(text); ok = true; } catch {
       const t = document.createElement('textarea');
@@ -679,6 +739,7 @@
     commitEdit();
     enabled = false;
     picked = null;
+    menuOpen = false;
     LISTENERS.forEach(([t, f]) => window.removeEventListener(t, f, true));
     hoverBox.style.display = 'none';
     pickBox.style.display = 'none';
@@ -696,9 +757,10 @@
     }
   });
 
-  chrome.storage.local.get([STORE, ON, CORNER]).then((s) => {
+  chrome.storage.local.get([STORE, ON, CORNER, FORMAT]).then((s) => {
     entries = s[STORE] || [];
     if (s[CORNER]) corner = s[CORNER];
+    if (s[FORMAT]) format = s[FORMAT];
     if (s[ON]) enable();
   });
 

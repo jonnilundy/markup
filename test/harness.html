@@ -1,8 +1,15 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Harness Page</title>
-<style>body{font-family:system-ui;background:#0b0b0c;color:#eee;padding:40px}h1{font-size:48px}a{color:#8ab4ff}.cta{display:inline-block;padding:10px 16px;background:#6d5dfc;border-radius:8px;color:#fff;text-decoration:none}</style>
+<html><head><meta charset="utf-8"><title>Lumen</title>
+<style>
+  *{box-sizing:border-box} body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0b0b0f;color:#ededf0}
+  nav{display:flex;align-items:center;gap:28px;padding:22px 56px;font-size:14px;color:#a0a0ab} nav b{color:#fff;font-size:17px;margin-right:auto} nav a{color:inherit;text-decoration:none}
+  section{padding:70px 56px 40px;max-width:980px} h1{font-size:56px;line-height:1.04;letter-spacing:-.03em;margin:0 0 20px}
+  #lede{font-size:19px;line-height:1.5;color:#a0a0ab;max-width:620px;margin:0 0 30px} #lede a{color:#fff}
+  .cta{display:inline-block;padding:11px 18px;border-radius:9px;font-size:15px;font-weight:500;text-decoration:none;margin-right:8px;background:#fff;color:#0b0b0f} .cta+.cta{background:#1d1d24;color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:20px 56px 80px;max-width:1100px} .card{background:#14141a;border:1px solid #22222b;border-radius:14px;padding:22px} .card h3{margin:0 0 8px;font-size:16px} .card p{margin:0;color:#8c8c97;font-size:14px;line-height:1.5}
+</style>
 <script>
-// Minimal chrome.storage shim for local testing.
+// Minimal chrome.storage shim so content.js runs as a plain page script.
 (() => {
   const data = JSON.parse(localStorage.getItem('shim') || '{"markup.enabled":true}');
   const subs = [];
@@ -17,12 +24,16 @@
 })();
 </script></head>
 <body>
-<nav><a href="#">Product</a> · <a href="#">Pricing</a></nav>
+<nav><b>Lumen</b><a href="#">Product</a><a href="#">Docs</a><a href="#">Pricing</a></nav>
 <section>
-  <h1>Email marketing platform that people love.</h1>
-  <p id="lede">Send <a href="#">email broadcasts</a>, run marketing automations and even send transactional emails.</p>
-  <a class="cta" href="https://example.com">Start free trial</a>
-  <a class="cta" href="https://example.com">Book a demo</a>
+  <h1>Analytics for teams that ship every day.</h1>
+  <p id="lede">Track <a href="#">every release</a>, spot regressions before your users do, and share one dashboard with the whole team.</p>
+  <a class="cta" href="https://example.com">Start free trial</a><a class="cta" href="https://example.com">Book a demo</a>
 </section>
+<div class="grid">
+  <div class="card"><h3>Release tracking</h3><p>See what changed in every deploy.</p></div>
+  <div class="card"><h3>Smart alerts</h3><p>Get pinged when a metric drifts.</p></div>
+  <div class="card"><h3>Shared dashboards</h3><p>One link for the whole company.</p></div>
+</div>
 <script src="../content.js"></script>
 </body></html>
