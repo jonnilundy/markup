@@ -1,11 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Markup",
-  "version": "0.1.0",
-  "description": "Edit copy and leave comments on any page, then copy one prompt for your agent.",
+  "version": "1.0.0",
+  "description": "Edit copy and comment on any live page, then copy every change as one prompt for your AI agent or plain English for Slack.",
+  "homepage_url": "https://github.com/jonnilundy/markup",
+  "icons": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
   "permissions": ["storage"],
   "background": { "service_worker": "background.js" },
-  "action": { "default_title": "Toggle Markup (Alt+Shift+E)" },
+  "action": {
+    "default_title": "Toggle Markup (Alt+Shift+E)",
+    "default_icon": { "16": "icons/icon-16.png", "32": "icons/icon-32.png" }
+  },
   "commands": {
     "toggle": {
       "suggested_key": { "default": "Alt+Shift+E" },

@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#888">
+<script>
+// Rasterize an SVG file to a transparent PNG data URL at the given size.
+window.raster = (src, size) => new Promise((res, rej) => {
+  const img = new Image();
+  img.onload = () => { const c = document.createElement('canvas'); c.width = c.height = size;
+    const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, size, size); res(c.toDataURL('image/png')); };
+  img.onerror = rej; img.src = src;
+});
+</script>

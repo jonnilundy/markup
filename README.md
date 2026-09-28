@@ -2,9 +2,9 @@
 
 # Markup
 
-Markup is a Chrome extension that turns edits and comments on any live page into one prompt for your AI agent.
+Markup is a Chrome extension that let's you markup content on any live page and paste it as one prompt for your AI agent.
 
-It can also copy them as plain English for Slack. No build step, no account, no server. Your changes stay in your browser until you copy them.
+It can also copy them as plain English for Slack.
 
 ## Install
 
@@ -40,8 +40,6 @@ https://lumen.example.com/
 • On the link "Book a demo": Remove this, we only want one CTA
 ```
 
-The panel is liquid glass, like iOS: the page behind it bends at the rim, through a live SVG displacement filter. It turns solid when you set Reduce transparency or Increase contrast in your system settings.
-
 Drag the panel by its top bar, or flick it, to move it to any corner. It remembers the corner. The minimize button turns it into a small pill. Click the pill to open the panel again. The **×** button clears every change (it asks first) and turns Markup off.
 
 | Key | Action |
@@ -55,8 +53,6 @@ Drag the panel by its top bar, or flick it, to move it to any corner. It remembe
 ## Privacy
 
 Markup asks for one permission, `storage`. It runs on every page so the panel can open anywhere, but it does nothing until you turn it on. Your changes are saved in `chrome.storage.local` on your machine. Nothing is sent anywhere. The only way data leaves the browser is when you click Copy and paste it yourself.
-
-Chrome does not let extensions run on `chrome://` pages or the Chrome Web Store, so Markup does not open there.
 
 ## Contributing
 
