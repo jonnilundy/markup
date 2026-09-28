@@ -15,7 +15,10 @@ It can also copy them as plain English for Slack. No build step, no account, no 
 2. Open `chrome://extensions`.
 3. Turn on **Developer mode** (top right).
 4. Click **Load unpacked** and pick the `markup` folder (a folder, not a ZIP).
-5. Reload any tabs that were already open.
+5. Click the puzzle-piece icon in the Chrome toolbar and pin **Markup**.
+6. Reload any tabs that were already open.
+
+It also works in other Chromium browsers that can load unpacked extensions, such as Edge, Brave, and Arc.
 
 ## Usage
 
@@ -37,19 +40,23 @@ https://lumen.example.com/
 • On the link "Book a demo": Remove this, we only want one CTA
 ```
 
-Drag the panel by its top bar, or flick it, to move it to any corner. It remembers the corner. The minimize button turns it into a small pill. The **×** button clears every change (it asks first) and turns Markup off.
+The panel is liquid glass, like iOS: the page behind it bends at the rim, through a live SVG displacement filter. It turns solid when you set Reduce transparency or Increase contrast in your system settings.
+
+Drag the panel by its top bar, or flick it, to move it to any corner. It remembers the corner. The minimize button turns it into a small pill. Click the pill to open the panel again. The **×** button clears every change (it asks first) and turns Markup off.
 
 | Key | Action |
 | --- | --- |
 | `Alt+Shift+E` | Turn Markup on or off |
 | `Enter` | Save an edit or a comment |
-| `Shift+Enter` | New line in an edit |
-| `Esc` | Undo the current edit, or cancel a comment |
+| `Shift+Enter` | New line in an edit or a comment |
+| `Esc` | Undo the current edit, cancel a comment, or switch to Browse |
 | `↑` | Select the parent element in Comment mode |
 
 ## Privacy
 
 Markup asks for one permission, `storage`. It runs on every page so the panel can open anywhere, but it does nothing until you turn it on. Your changes are saved in `chrome.storage.local` on your machine. Nothing is sent anywhere. The only way data leaves the browser is when you click Copy and paste it yourself.
+
+Chrome does not let extensions run on `chrome://` pages or the Chrome Web Store, so Markup does not open there.
 
 ## Contributing
 
@@ -57,6 +64,7 @@ There is nothing to build. Edit the files and click reload on the extension card
 
 - `content.js`: the panel, the page overlays, and both copy formats
 - `background.js`: the toolbar button and the keyboard shortcut
+- `vendor/liquid-glass.js`: the liquid glass filter, adapted from [liquid-glass](https://github.com/shuding/liquid-glass) by Shu Ding (MIT)
 - `test/harness.html`: a demo page with a stand-in for `chrome.storage`, so you can try the panel by opening the file directly, without installing the extension
 
 ## License

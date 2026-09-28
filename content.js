@@ -17,6 +17,7 @@
   let picked = null; // element chosen in comment mode
   let format = 'agent'; // agent | human
   let menuOpen = false;
+  let menuGlass = null;
   let corner = { right: true, bottom: true }; // where the panel rests
   let anchor = { right: true, bottom: true }; // which panel corner sits on the dock point
 
@@ -65,7 +66,7 @@
       --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
       --accent: #0a84ff; --edit: #30d158; --note: #ffd60a;
       --label: rgba(255,255,255,.88); --label2: rgba(255,255,255,.55); --label3: rgba(255,255,255,.3);
-      --material: rgba(36,36,40,.7); --material-solid: #242428;
+      --material: rgba(22,22,26,.56); --material-solid: #242428;
       --fill: rgba(255,255,255,.06); --fill2: rgba(255,255,255,.1);
       --edge: rgba(255,255,255,.1); --highlight: rgba(255,255,255,.12);
       --field: rgba(0,0,0,.25);
@@ -87,8 +88,10 @@
     .surface {
       position: absolute; color: var(--label);
       background: var(--material);
-      -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
-      box-shadow: inset 0 .5px 0 var(--highlight), 0 0 0 .5px var(--edge), 0 12px 40px rgba(0,0,0,.22), 0 2px 8px rgba(0,0,0,.1);
+      -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: var(--glass-filter, blur(30px) saturate(180%));
+      /* specular rim: bright top-left edge, faint lower edge, soft inner glow, then the drop shadow */
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,.22), inset -1px -1px 0 rgba(255,255,255,.07), inset 0 0 14px rgba(255,255,255,.05),
+        0 0 0 .5px rgba(0,0,0,.35), 0 12px 40px rgba(0,0,0,.28), 0 2px 8px rgba(0,0,0,.12);
       transition: opacity 220ms var(--out), transform 220ms var(--out), filter 220ms var(--out), visibility 0s;
     }
     .dock:not(.shown) .surface, .dock.min .panel, .dock:not(.min) .pill {
@@ -150,8 +153,8 @@
     .split .btn.chev { border-radius: 0 7px 7px 0; min-width: 0; padding: 4px 7px; margin-left: 1px; }
     .split .btn.chev svg { margin: 0; width: 10px; height: 10px; }
     .menu { position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 2; min-width: 232px; padding: 5px; border-radius: 9px;
-      background: rgba(40,40,44,.92); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
-      box-shadow: inset 0 .5px 0 var(--highlight), 0 0 0 .5px var(--edge), 0 10px 30px rgba(0,0,0,.4);
+      background: rgba(30,30,34,.7); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: var(--glass-filter, blur(24px) saturate(180%));
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,.2), inset -1px -1px 0 rgba(255,255,255,.06), 0 0 0 .5px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.4);
       transform-origin: right bottom; animation: menu-in 150ms var(--out); }
     @keyframes menu-in { from { opacity: 0; transform: scale(.97); } }
     .item { display: grid; grid-template-columns: 16px 1fr; align-items: center; column-gap: 4px; padding: 4px 8px 5px 4px; border-radius: 5px; cursor: default; }
@@ -167,6 +170,7 @@
     .pill b.zero { color: var(--label2); background: var(--fill2); }
 
     .dock.dragging .surface { transition: none; }
+    @media (prefers-reduced-transparency: reduce) { .menu { background: var(--material-solid); backdrop-filter: none; } }
 
     @media (prefers-reduced-motion: reduce) {
       .surface, .dock:not(.shown) .surface, .dock.min .panel, .dock:not(.min) .pill { transform: none; filter: none; }
@@ -242,6 +246,11 @@
     root.append(style, markers, hoverBox, pickBox, dock);
     document.documentElement.append(host);
     setAnchorCSS();
+    // Liquid glass: live refraction of the page at the rim (Chrome backdrop-filter + SVG displacement).
+    if (typeof createLiquidGlass === 'function') {
+      createLiquidGlass(panel, root, { radius: 14, bezel: 26, strength: 1.5, blur: 5, brightness: 0.7 });
+      createLiquidGlass(pill, root, { radius: 999, bezel: 12, strength: 1.3, blur: 3, brightness: 0.75 });
+    }
   }
 
   function place(box, el) {
@@ -317,6 +326,9 @@
         </div>
       </div>`;
 
+    if (menuGlass) { menuGlass.destroy(); menuGlass = null; }
+    const menuEl = content.querySelector('.menu');
+    if (menuEl && typeof createLiquidGlass === 'function') menuGlass = createLiquidGlass(menuEl, root, { radius: 9, bezel: 10, strength: 0.8, blur: 12, brightness: 0.6 });
     const copyBtn = content.querySelector('[data-act="copy"]');
     copyBtn.onclick = () => copyPrompt(copyBtn);
     content.querySelector('[data-act="menu"]').onclick = (ev) => { ev.stopPropagation(); menuOpen = !menuOpen; render(); };
